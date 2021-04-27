@@ -1,0 +1,22 @@
+data <- read.csv("test_sample.csv",header=T)
+library(rpart)
+suppressWarnings(library(MASS))
+
+prtm <- rpart(Y ~ .,data = data, method ='poisson', control = rpart.control(cp = 0))
+(best.CP = prtm$cptable[which.min(prtm$cptable[,"xerror"]),"CP"])
+set.seed(1)
+prtm_opt <- rpart(Y ~ .,data = data, method ='poisson', control = rpart.control(cp = best.CP))
+set.seed(1)
+br <- glm.nb(Y~.,data = data)
+rmse <- function(x) sqrt(mean(x^2))
+t_rmse <- rmse(resid(prtm_opt))
+br_rmse <- rmse(br$residuals)
+X <- data.frame(0,4,4,4)
+names(X) <- c("Y", "X1", "X2", "X3")
+pr <- predict(prtm_opt, X)
+pred_t <- dpois(0, lambda = pr)
+mu <- predict(br, X, type = "response")
+pred_nb<-dnbinom(0,mu=mu,size=br$theta)
+
+(c(br_rmse, t_rmse, pred_nb, pred_t))
+
